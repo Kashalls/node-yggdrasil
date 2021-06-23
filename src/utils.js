@@ -1,4 +1,4 @@
-const nf = require('node-fetch')
+const fetch = require('node-fetch')
 
 const { version } = require('../package.json'); // eslint-disable-line
 
@@ -11,7 +11,7 @@ const headers = {
  * Generic POST request
  */
 async function call (host, path, data, agent) {
-  const resp = await nf(`${host}/${path}`, { agent, body: JSON.stringify(data), headers, method: 'POST' })
+  const resp = await fetch(`${host}${host.endsWith('/') ? '' : '/'}${path}`, { agent, body: JSON.stringify(data), headers, method: 'POST' })
   let body = await resp.text()
   if (body.length === 0) return ''
   try {
