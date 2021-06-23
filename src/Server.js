@@ -1,6 +1,7 @@
 const { createHash } = require('crypto')
 const utils = require('./utils')
-const nf = require('node-fetch')
+const fetch = require('node-fetch')
+const { URL, URLSearchParams } = require('url')
 
 const defaultHost = 'https://sessionserver.mojang.com'
 
@@ -40,11 +41,22 @@ function loader (moduleOptions) {
    * @async
    */
   async function hasJoined (username, serverid, sharedsecret, serverkey) {
-    const host = moduleOptions?.host ?? defaultHost
-    const hash = utils.mcHexDigest(createHash('sha1').update(serverid).update(sharedsecret).update(serverkey).digest())
-    const data = await nf(`${host}/session/minecraft/hasJoined?username=${username}&serverId=${hash}`, { agent: moduleOptions?.agent, method: 'GET' })
-    const body = JSON.parse(await data.text())
-    if (body.id !== undefined) return body
+    const url = new URL(`${moduleOptions?.host ?? defaultHost}/session/minecraft/hasJoined`)
+    const params = {
+      username,
+      serverId: utils.mcHexDigest(createHash('sha1').update(serverid).update(sharedsecret).update(serverkey).digest())
+    }
+    url.search = new URLSearchParams(params).toString();
+
+    const data = await fetch(url, { agent: moduleOptions?.agent, method: 'GET' })
+      .then((res) => {
+        if (res.ok) {
+          return res.text()
+        } else {
+          throw new Error(`HTTP Error: ${res.status} ${res.statusText}`)
+        }
+      })
+    if (data.id !== undefined) return data
     else throw new Error('Failed to verify username!')
   }
 
